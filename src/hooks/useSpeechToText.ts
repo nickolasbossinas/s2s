@@ -18,6 +18,14 @@ function downsample(buffer: Float32Array, inputRate: number, outputRate: number)
   return out;
 }
 
+/** Normalize ASR output: lowercase and capitalize first letter. */
+function normalizeText(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  const lower = trimmed.toLowerCase();
+  return lower[0].toUpperCase() + lower.slice(1);
+}
+
 function checkBrowserSupport(): string | null {
   if (!navigator.mediaDevices?.getUserMedia) return 'Microphone access not supported in this browser.';
   if (!window.AudioContext) return 'Web Audio API not supported in this browser.';
@@ -75,13 +83,14 @@ export function useSpeechToText(): UseSpeechToTextReturn {
     engine.feedAudio(samples16k);
 
     // Update partial text
-    const text = engine.getPartialText();
-    setPartialText(text);
+    const raw = engine.getPartialText();
+    setPartialText(normalizeText(raw));
 
     // Check endpoint
     if (engine.checkEndpoint()) {
-      if (text.trim()) {
-        finalsRef.current.push(text.trim());
+      const finalized = normalizeText(raw);
+      if (finalized) {
+        finalsRef.current.push(finalized);
         setFinalText(finalsRef.current.join(' '));
       }
       engine.resetStream();
