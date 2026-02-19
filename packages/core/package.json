@@ -1,6 +1,6 @@
 {
   "name": "s2s-core",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Full-duplex speech-to-speech library — STT + TTS in the browser via WebAssembly",
   "main": "./dist/s2s-core.umd.cjs",
