@@ -13,6 +13,10 @@ dist-ssr
 *.local
 .env
 
+# Sherpa-onnx WASM + model binaries (downloaded via scripts/download-sherpa-model.sh)
+public/sherpa-onnx-asr/*.wasm
+public/sherpa-onnx-asr/*.data
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

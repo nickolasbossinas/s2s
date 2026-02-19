@@ -6,6 +6,7 @@
   max-width: 720px;
   width: 100%;
   margin: 0 auto;
+  position: relative;
 }
 
 /* Scrollable message area */
@@ -97,4 +98,100 @@
 .sendButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Mic button */
+.micButton {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background-color: #374151;
+  color: #f3f4f6;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.2s;
+}
+
+.micButton:hover:not(:disabled) {
+  background-color: #4b5563;
+}
+
+.micButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.micButtonRecording {
+  background-color: #dc2626;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.micButtonRecording:hover {
+  background-color: #b91c1c;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Partial transcription line */
+.partialText {
+  padding: 0.25rem 1rem;
+  font-size: 0.8rem;
+  color: #9ca3af;
+  font-style: italic;
+  background-color: #1a1a2e;
+}
+
+/* STT error line */
+.sttError {
+  padding: 0.25rem 1rem;
+  font-size: 0.8rem;
+  color: #f87171;
+  background-color: #1a1a2e;
+}
+
+/* Loading overlay */
+.loadingOverlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  z-index: 10;
+}
+
+.loadingTitle {
+  margin: 0;
+  font-size: 1rem;
+  color: #e2e8f0;
+}
+
+.progressBar {
+  width: 80%;
+  max-width: 300px;
+  height: 6px;
+  background-color: #374151;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: #2563eb;
+  transition: width 0.3s;
+}
+
+.loadingDetail {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #9ca3af;
 }
