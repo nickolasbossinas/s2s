@@ -11,6 +11,8 @@ interface ChatInputProps {
   sttPartial: string;
   sttStatus: SttStatus;
   onMicToggle: () => void;
+  voiceGender: 'female' | 'male';
+  onVoiceGenderToggle: () => void;
 }
 
 export default function ChatInput({
@@ -21,6 +23,8 @@ export default function ChatInput({
   sttPartial,
   sttStatus,
   onMicToggle,
+  voiceGender,
+  onVoiceGenderToggle,
 }: ChatInputProps) {
   const [text, setText] = useState('');
   const [autoSend, setAutoSend] = useState(true);
@@ -89,6 +93,27 @@ export default function ChatInput({
           </button>
         </div>
         <MicButton status={sttStatus} onClick={onMicToggle} />
+        <button
+          className={styles.voiceToggle}
+          type="button"
+          onClick={onVoiceGenderToggle}
+          aria-label={`Voice: ${voiceGender}`}
+          title={`Voice: ${voiceGender} — click to switch`}
+        >
+          {voiceGender === 'female' ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="8" r="5" />
+              <path d="M12 13v8" />
+              <path d="M9 18h6" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="10" cy="10" r="6" />
+              <path d="M14.5 5.5 20 0" />
+              <path d="M15 0h5v5" />
+            </svg>
+          )}
+        </button>
         <button className={styles.sendButton} type="submit" disabled={disabled || !text.trim()}>
           Send
         </button>

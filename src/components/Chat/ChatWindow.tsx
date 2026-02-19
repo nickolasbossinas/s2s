@@ -12,9 +12,13 @@ function createMessage(role: Message['role'], content: string): Message {
   return { id: String(nextId++), role, content, timestamp: Date.now() };
 }
 
+const VOICE_SID = { female: 0, male: 2 } as const;
+type VoiceGender = keyof typeof VOICE_SID;
+
 export default function ChatWindow() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [voiceGender, setVoiceGender] = useState<VoiceGender>('female');
 
   const {
     status: sttStatus,
@@ -37,7 +41,7 @@ export default function ChatWindow() {
       if (reply) {
         const assistantMsg = createMessage('assistant', reply);
         setMessages((prev) => [...prev, assistantMsg]);
-        speak(reply);
+        speak(reply, VOICE_SID[voiceGender]);
       }
     } finally {
       setLoading(false);
@@ -59,6 +63,8 @@ export default function ChatWindow() {
         sttPartial={partialText}
         sttStatus={sttStatus}
         onMicToggle={toggleRecording}
+        voiceGender={voiceGender}
+        onVoiceGenderToggle={() => setVoiceGender((g) => g === 'female' ? 'male' : 'female')}
       />
     </div>
   );

@@ -5,7 +5,7 @@ export type TtsStatus = 'idle' | 'loading' | 'ready' | 'speaking' | 'error';
 
 export interface UseTextToSpeechReturn {
   ttsStatus: TtsStatus;
-  speak: (text: string) => void;
+  speak: (text: string, sid?: number) => void;
   stopSpeaking: () => void;
 }
 
@@ -90,7 +90,7 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
     });
   }, [playNext]);
 
-  const speak = useCallback((text: string) => {
+  const speak = useCallback((text: string, sid = 0) => {
     if (!engineRef.current || !text.trim()) return;
 
     // Create / resume AudioContext inside a user-gesture call stack
@@ -112,7 +112,7 @@ export function useTextToSpeech(): UseTextToSpeechReturn {
     }
 
     setTtsStatus('speaking');
-    engineRef.current.speak(text, 0, 1.0, id);
+    engineRef.current.speak(text, sid, 1.0, id);
   }, []);
 
   const stopSpeaking = useCallback(() => {
