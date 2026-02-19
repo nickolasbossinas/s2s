@@ -61,9 +61,16 @@
   background-color: #1a1a2e;
 }
 
-.input {
+.inputWrapper {
   flex: 1;
-  padding: 0.625rem 1rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  padding: 0.625rem 2.25rem 0.625rem 1rem;
   border: 1px solid #4b5563;
   border-radius: 0.5rem;
   background-color: #111827;
@@ -78,6 +85,34 @@
 
 .input::placeholder {
   color: #6b7280;
+}
+
+/* Auto-send toggle inside input */
+.autoSendToggle {
+  position: absolute;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: #4b5563;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.autoSendToggle:hover {
+  color: #9ca3af;
+}
+
+.autoSendActive {
+  color: #facc15;
+}
+
+.autoSendActive:hover {
+  color: #eab308;
 }
 
 .sendButton {
