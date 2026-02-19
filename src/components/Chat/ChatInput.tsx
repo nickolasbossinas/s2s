@@ -23,7 +23,7 @@ export default function ChatInput({
   onMicToggle,
 }: ChatInputProps) {
   const [text, setText] = useState('');
-  const [autoSend, setAutoSend] = useState(false);
+  const [autoSend, setAutoSend] = useState(true);
   const textRef = useRef('');
   textRef.current = text;
 
