@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-DEST="public/sherpa-onnx-asr"
+DEST="packages/demo/public/sherpa-onnx-asr"
 BASE_URL="https://huggingface.co/spaces/k2-fsa/web-assembly-asr-sherpa-onnx-en/resolve/main"
 
 FILES=(
@@ -30,7 +30,7 @@ echo "STT files in $DEST:"
 ls -lh "$DEST"
 
 # --- TTS model ---
-TTS_DEST="public/sherpa-onnx-tts"
+TTS_DEST="packages/demo/public/sherpa-onnx-tts"
 TTS_BASE_URL="https://huggingface.co/spaces/k2-fsa/web-assembly-tts-sherpa-onnx-en/resolve/main"
 
 TTS_FILES=(

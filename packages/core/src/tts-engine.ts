@@ -3,6 +3,11 @@
  * All WASM compilation, model loading, and synthesis run off the main thread.
  */
 
+export interface TtsEngineOptions {
+  workerPath?: string;
+  assetPath?: string;
+}
+
 export type TtsAudio = {
   samples: Float32Array;
   sampleRate: number;
@@ -14,13 +19,19 @@ export class TtsEngine {
   private initPromise: Promise<void> | null = null;
   private onAudio: (audio: TtsAudio) => void;
   private onDone: (id: number) => void;
+  private workerUrl: string;
+  private assetPath: string;
 
   constructor(
     onAudio: (audio: TtsAudio) => void,
     onDone: (id: number) => void,
+    options?: TtsEngineOptions,
   ) {
     this.onAudio = onAudio;
     this.onDone = onDone;
+    const base = options?.workerPath ?? '/';
+    this.workerUrl = base + 'sherpa-tts-worker.js';
+    this.assetPath = options?.assetPath ?? '/sherpa-onnx-tts/';
   }
 
   /** Load WASM + model in a Web Worker. Idempotent. */
@@ -32,7 +43,7 @@ export class TtsEngine {
 
   private doInit(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const worker = new Worker('/sherpa-tts-worker.js');
+      const worker = new Worker(this.workerUrl);
       this.worker = worker;
 
       worker.onmessage = (e: MessageEvent) => {
@@ -49,7 +60,7 @@ export class TtsEngine {
         reject(new Error(`TTS Worker error: ${err.message}`));
       };
 
-      worker.postMessage({ type: 'init' });
+      worker.postMessage({ type: 'init', assetPath: this.assetPath });
     });
   }
 

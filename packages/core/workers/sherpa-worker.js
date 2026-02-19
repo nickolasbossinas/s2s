@@ -3,14 +3,14 @@
  * Runs all WASM compilation, model loading, and recognition off the main thread.
  *
  * Messages IN (from main thread):
- *   { type: 'init' }                         — load WASM + model, create recognizer
+ *   { type: 'init', assetPath?: string }      — load WASM + model, create recognizer
  *   { type: 'feed', samples: Float32Array }   — feed 16kHz PCM audio
  *   { type: 'destroy' }                       — free resources
  *
  * Messages OUT (to main thread):
  *   { type: 'ready' }                         — recognizer is ready
  *   { type: 'error', message: string }        — init or runtime error
- *   { type: 'result', text: string, isEndpoint: boolean } — recognition result after feeding audio
+ *   { type: 'result', text: string, isEndpoint: boolean } — recognition result
  */
 
 /* global importScripts, Module */
@@ -22,7 +22,7 @@ self.onmessage = function (e) {
   const msg = e.data;
 
   if (msg.type === 'init') {
-    doInit();
+    doInit(msg.assetPath);
   } else if (msg.type === 'feed') {
     doFeed(msg.samples);
   } else if (msg.type === 'destroy') {
@@ -30,12 +30,15 @@ self.onmessage = function (e) {
   }
 };
 
-function doInit() {
+function doInit(assetPath) {
+  var basePath = assetPath || '/sherpa-onnx-asr/';
+  if (basePath[basePath.length - 1] !== '/') basePath += '/';
+
   try {
     // Set up the Emscripten Module object before loading scripts
     self.Module = {
       locateFile: function (path) {
-        return '/sherpa-onnx-asr/' + path;
+        return basePath + path;
       },
       setStatus: function () {
         // no-op in worker — no UI to update
@@ -59,8 +62,8 @@ function doInit() {
     };
 
     // Load the sherpa-onnx scripts via importScripts (synchronous in workers)
-    importScripts('/sherpa-onnx-asr/sherpa-onnx-asr.js');
-    importScripts('/sherpa-onnx-asr/sherpa-onnx-wasm-main-asr.js');
+    importScripts(basePath + 'sherpa-onnx-asr.js');
+    importScripts(basePath + 'sherpa-onnx-wasm-main-asr.js');
   } catch (err) {
     self.postMessage({ type: 'error', message: err.message || String(err) });
   }
@@ -76,8 +79,8 @@ function doFeed(samples) {
       recognizer.decode(stream);
     }
 
-    const text = recognizer.getResult(stream).text;
-    const isEndpoint = recognizer.isEndpoint(stream);
+    var text = recognizer.getResult(stream).text;
+    var isEndpoint = recognizer.isEndpoint(stream);
 
     self.postMessage({ type: 'result', text: text, isEndpoint: isEndpoint });
 

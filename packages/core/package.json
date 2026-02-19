@@ -1,0 +1,31 @@
+{
+  "name": "s2s-core",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Full-duplex speech-to-speech library — STT + TTS in the browser via WebAssembly",
+  "main": "./dist/s2s-core.umd.cjs",
+  "module": "./dist/s2s-core.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/s2s-core.js",
+      "require": "./dist/s2s-core.umd.cjs"
+    },
+    "./workers/*": "./workers/*"
+  },
+  "files": [
+    "dist",
+    "workers"
+  ],
+  "scripts": {
+    "build": "vite build && tsc --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["speech-to-text", "text-to-speech", "stt", "tts", "wasm", "sherpa-onnx", "voice"],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1"
+  }
+}

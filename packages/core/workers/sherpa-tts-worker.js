@@ -3,9 +3,9 @@
  * Runs all WASM compilation, model loading, and synthesis off the main thread.
  *
  * Messages IN (from main thread):
- *   { type: 'init' }                                                    — load WASM + model
+ *   { type: 'init', assetPath?: string }                                      — load WASM + model
  *   { type: 'speak', text: string, sid?: number, speed?: number, id: number } — synthesize speech
- *   { type: 'destroy' }                                                 — free resources
+ *   { type: 'destroy' }                                                       — free resources
  *
  * Messages OUT (to main thread):
  *   { type: 'ready', numSpeakers: number }                              — TTS engine ready
@@ -22,7 +22,7 @@ self.onmessage = function (e) {
   const msg = e.data;
 
   if (msg.type === 'init') {
-    doInit();
+    doInit(msg.assetPath);
   } else if (msg.type === 'speak') {
     doSpeak(msg.text, msg.sid || 0, msg.speed || 1.0, msg.id);
   } else if (msg.type === 'destroy') {
@@ -30,11 +30,14 @@ self.onmessage = function (e) {
   }
 };
 
-function doInit() {
+function doInit(assetPath) {
+  var basePath = assetPath || '/sherpa-onnx-tts/';
+  if (basePath[basePath.length - 1] !== '/') basePath += '/';
+
   try {
     self.Module = {
       locateFile: function (path) {
-        return '/sherpa-onnx-tts/' + path;
+        return basePath + path;
       },
       setStatus: function () {
         // no-op in worker
@@ -108,8 +111,8 @@ function doInit() {
     };
 
     // Glue script first (sets up Emscripten Module), then API script
-    importScripts('/sherpa-onnx-tts/sherpa-onnx-wasm-main-tts.js');
-    importScripts('/sherpa-onnx-tts/sherpa-onnx-tts.js');
+    importScripts(basePath + 'sherpa-onnx-wasm-main-tts.js');
+    importScripts(basePath + 'sherpa-onnx-tts.js');
   } catch (err) {
     self.postMessage({ type: 'error', message: err.message || String(err) });
   }

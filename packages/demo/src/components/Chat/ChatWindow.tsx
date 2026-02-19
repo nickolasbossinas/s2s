@@ -1,8 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { Message } from '../../types/chat';
 import { sendMessage } from '../../services/llm';
-import { useSpeechToText } from '../../hooks/useSpeechToText';
-import { useTextToSpeech } from '../../hooks/useTextToSpeech';
+import { useS2S } from '../../hooks/useS2S';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import styles from './Chat.module.css';
@@ -21,14 +20,13 @@ export default function ChatWindow() {
   const [voiceGender, setVoiceGender] = useState<VoiceGender>('female');
 
   const {
-    status: sttStatus,
+    sttStatus,
     partialText,
     finalText,
     toggleRecording,
+    speak,
     clearText,
-  } = useSpeechToText();
-
-  const { speak } = useTextToSpeech();
+  } = useS2S();
 
   const handleSend = async (text: string) => {
     clearText();

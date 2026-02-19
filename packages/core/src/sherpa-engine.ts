@@ -1,7 +1,12 @@
 /**
- * Thin proxy to the sherpa-onnx Web Worker.
+ * Thin proxy to the sherpa-onnx STT Web Worker.
  * All WASM compilation, model loading, and recognition run off the main thread.
  */
+
+export interface SherpaEngineOptions {
+  workerPath?: string;
+  assetPath?: string;
+}
 
 export type SherpaResult = {
   text: string;
@@ -12,9 +17,17 @@ export class SherpaEngine {
   private worker: Worker | null = null;
   private initPromise: Promise<void> | null = null;
   private onResult: (result: SherpaResult) => void;
+  private workerUrl: string;
+  private assetPath: string;
 
-  constructor(onResult: (result: SherpaResult) => void) {
+  constructor(
+    onResult: (result: SherpaResult) => void,
+    options?: SherpaEngineOptions,
+  ) {
     this.onResult = onResult;
+    const base = options?.workerPath ?? '/';
+    this.workerUrl = base + 'sherpa-worker.js';
+    this.assetPath = options?.assetPath ?? '/sherpa-onnx-asr/';
   }
 
   /** Load WASM + model in a Web Worker. Idempotent. */
@@ -26,13 +39,12 @@ export class SherpaEngine {
 
   private doInit(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const worker = new Worker('/sherpa-worker.js');
+      const worker = new Worker(this.workerUrl);
       this.worker = worker;
 
       worker.onmessage = (e: MessageEvent) => {
         const msg = e.data;
         if (msg.type === 'ready') {
-          // Switch to runtime message handler
           worker.onmessage = this.handleRuntimeMessage.bind(this);
           resolve();
         } else if (msg.type === 'error') {
@@ -44,7 +56,7 @@ export class SherpaEngine {
         reject(new Error(`Worker error: ${err.message}`));
       };
 
-      worker.postMessage({ type: 'init' });
+      worker.postMessage({ type: 'init', assetPath: this.assetPath });
     });
   }
 

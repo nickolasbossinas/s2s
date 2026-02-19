@@ -16,6 +16,12 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Resolve s2s-core to source for type checking */
+    "baseUrl": ".",
+    "paths": {
+      "s2s-core": ["../core/src/index.ts"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
