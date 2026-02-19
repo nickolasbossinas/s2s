@@ -16,6 +16,8 @@ dist-ssr
 # Sherpa-onnx WASM + model binaries (downloaded via scripts/download-sherpa-model.sh)
 public/sherpa-onnx-asr/*.wasm
 public/sherpa-onnx-asr/*.data
+public/sherpa-onnx-tts/*.wasm
+public/sherpa-onnx-tts/*.data
 
 # Claude Code local settings
 .claude/

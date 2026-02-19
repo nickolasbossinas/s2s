@@ -26,5 +26,31 @@ for file in "${FILES[@]}"; do
 done
 
 echo ""
-echo "Done. Files in $DEST:"
+echo "STT files in $DEST:"
 ls -lh "$DEST"
+
+# --- TTS model ---
+TTS_DEST="public/sherpa-onnx-tts"
+TTS_BASE_URL="https://huggingface.co/spaces/k2-fsa/web-assembly-tts-sherpa-onnx-en/resolve/main"
+
+TTS_FILES=(
+  "sherpa-onnx-tts.js"
+  "sherpa-onnx-wasm-main-tts.js"
+  "sherpa-onnx-wasm-main-tts.wasm"
+  "sherpa-onnx-wasm-main-tts.data"
+)
+
+mkdir -p "$TTS_DEST"
+
+for file in "${TTS_FILES[@]}"; do
+  if [ -f "$TTS_DEST/$file" ]; then
+    echo "Already exists: $TTS_DEST/$file — skipping"
+  else
+    echo "Downloading $file ..."
+    curl -L --progress-bar -o "$TTS_DEST/$file" "$TTS_BASE_URL/$file"
+  fi
+done
+
+echo ""
+echo "TTS files in $TTS_DEST:"
+ls -lh "$TTS_DEST"

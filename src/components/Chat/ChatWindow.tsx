@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import type { Message } from '../../types/chat';
 import { sendMessage } from '../../services/llm';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
+import { useTextToSpeech } from '../../hooks/useTextToSpeech';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import styles from './Chat.module.css';
@@ -23,6 +24,8 @@ export default function ChatWindow() {
     clearText,
   } = useSpeechToText();
 
+  const { speak } = useTextToSpeech();
+
   const handleSend = async (text: string) => {
     clearText();
     const userMsg = createMessage('user', text);
@@ -31,8 +34,11 @@ export default function ChatWindow() {
 
     try {
       const reply = await sendMessage(text);
-      const assistantMsg = createMessage('assistant', reply);
-      setMessages((prev) => [...prev, assistantMsg]);
+      if (reply) {
+        const assistantMsg = createMessage('assistant', reply);
+        setMessages((prev) => [...prev, assistantMsg]);
+        speak(reply);
+      }
     } finally {
       setLoading(false);
     }
