@@ -17,6 +17,9 @@ dist-ssr
 public/sherpa-onnx-asr/*.wasm
 public/sherpa-onnx-asr/*.data
 
+# Claude Code local settings
+.claude/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
