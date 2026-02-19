@@ -6,15 +6,21 @@
 export type TtsAudio = {
   samples: Float32Array;
   sampleRate: number;
+  id: number;
 };
 
 export class TtsEngine {
   private worker: Worker | null = null;
   private initPromise: Promise<void> | null = null;
   private onAudio: (audio: TtsAudio) => void;
+  private onDone: (id: number) => void;
 
-  constructor(onAudio: (audio: TtsAudio) => void) {
+  constructor(
+    onAudio: (audio: TtsAudio) => void,
+    onDone: (id: number) => void,
+  ) {
     this.onAudio = onAudio;
+    this.onDone = onDone;
   }
 
   /** Load WASM + model in a Web Worker. Idempotent. */
@@ -50,16 +56,18 @@ export class TtsEngine {
   private handleRuntimeMessage(e: MessageEvent): void {
     const msg = e.data;
     if (msg.type === 'audio') {
-      this.onAudio({ samples: msg.samples, sampleRate: msg.sampleRate });
+      this.onAudio({ samples: msg.samples, sampleRate: msg.sampleRate, id: msg.id });
+    } else if (msg.type === 'done') {
+      this.onDone(msg.id);
     } else if (msg.type === 'error') {
       console.error('[TtsEngine] Worker error:', msg.message);
     }
   }
 
   /** Request speech synthesis. Audio comes back via onAudio callback. */
-  speak(text: string, sid = 0, speed = 1.0): void {
+  speak(text: string, sid = 0, speed = 1.0, id = 0): void {
     if (!this.worker) return;
-    this.worker.postMessage({ type: 'speak', text, sid, speed });
+    this.worker.postMessage({ type: 'speak', text, sid, speed, id });
   }
 
   /** Clean up worker and resources. */

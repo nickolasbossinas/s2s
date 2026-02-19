@@ -3,14 +3,15 @@
  * Runs all WASM compilation, model loading, and synthesis off the main thread.
  *
  * Messages IN (from main thread):
- *   { type: 'init' }                                          — load WASM + model
- *   { type: 'speak', text: string, sid?: number, speed?: number } — synthesize speech
- *   { type: 'destroy' }                                       — free resources
+ *   { type: 'init' }                                                    — load WASM + model
+ *   { type: 'speak', text: string, sid?: number, speed?: number, id: number } — synthesize speech
+ *   { type: 'destroy' }                                                 — free resources
  *
  * Messages OUT (to main thread):
- *   { type: 'ready', numSpeakers: number }                    — TTS engine ready
- *   { type: 'audio', samples: Float32Array, sampleRate: number } — synthesized audio
- *   { type: 'error', message: string }                        — error
+ *   { type: 'ready', numSpeakers: number }                              — TTS engine ready
+ *   { type: 'audio', samples: Float32Array, sampleRate: number, id: number } — synthesized audio chunk
+ *   { type: 'done', id: number }                                        — all chunks for this id sent
+ *   { type: 'error', message: string }                                  — error
  */
 
 /* global importScripts, createOfflineTts */
@@ -23,7 +24,7 @@ self.onmessage = function (e) {
   if (msg.type === 'init') {
     doInit();
   } else if (msg.type === 'speak') {
-    doSpeak(msg.text, msg.sid || 0, msg.speed || 1.0);
+    doSpeak(msg.text, msg.sid || 0, msg.speed || 1.0, msg.id);
   } else if (msg.type === 'destroy') {
     doDestroy();
   }
@@ -114,15 +115,32 @@ function doInit() {
   }
 }
 
-function doSpeak(text, sid, speed) {
+/**
+ * Split text into sentences and synthesize each one separately,
+ * sending audio chunks back as soon as each is ready.
+ */
+function doSpeak(text, sid, speed, id) {
   if (!tts) return;
 
   try {
-    var audio = tts.generate({ text: text, sid: sid, speed: speed });
-    self.postMessage(
-      { type: 'audio', samples: audio.samples, sampleRate: tts.sampleRate },
-      [audio.samples.buffer]
-    );
+    // Split on sentence-ending punctuation followed by whitespace (or end)
+    var sentences = text.match(/[^.!?]+[.!?]+[\s]?|[^.!?]+$/g);
+    if (!sentences) sentences = [text];
+
+    var sampleRate = tts.sampleRate;
+
+    for (var i = 0; i < sentences.length; i++) {
+      var sentence = sentences[i].trim();
+      if (!sentence) continue;
+
+      var audio = tts.generate({ text: sentence, sid: sid, speed: speed });
+      self.postMessage(
+        { type: 'audio', samples: audio.samples, sampleRate: sampleRate, id: id },
+        [audio.samples.buffer]
+      );
+    }
+
+    self.postMessage({ type: 'done', id: id });
   } catch (err) {
     self.postMessage({ type: 'error', message: err.message || String(err) });
   }
