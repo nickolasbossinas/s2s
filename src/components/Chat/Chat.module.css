@@ -174,13 +174,30 @@
   50% { opacity: 0.7; }
 }
 
-/* Partial transcription line */
-.partialText {
-  padding: 0.25rem 1rem;
-  font-size: 0.8rem;
+/* Partial transcription ghost text inside input */
+.partialOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 2.25rem;
+  bottom: 0;
+  padding: 0.625rem 0 0.625rem 1rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  pointer-events: none;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.partialHidden {
+  visibility: hidden;
+  white-space: pre;
+}
+
+.partialGhost {
   color: #9ca3af;
   font-style: italic;
-  background-color: #1a1a2e;
+  opacity: 0.6;
 }
 
 /* STT error line */

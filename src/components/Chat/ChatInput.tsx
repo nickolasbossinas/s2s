@@ -65,11 +65,17 @@ export default function ChatInput({
           <input
             className={styles.input}
             type="text"
-            placeholder="Type a message..."
+            placeholder={sttStatus === 'recording' && sttPartial ? '' : 'Type a message...'}
             value={text}
             onChange={(e) => setText(e.target.value)}
             disabled={disabled}
           />
+          {sttStatus === 'recording' && sttPartial && (
+            <div className={styles.partialOverlay} aria-hidden="true">
+              <span className={styles.partialHidden}>{text}{text && !text.endsWith(' ') ? ' ' : ''}</span>
+              <span className={styles.partialGhost}>{sttPartial}</span>
+            </div>
+          )}
           <button
             className={`${styles.autoSendToggle} ${autoSend ? styles.autoSendActive : ''}`}
             type="button"
@@ -87,9 +93,6 @@ export default function ChatInput({
           Send
         </button>
       </form>
-      {sttStatus === 'recording' && sttPartial && (
-        <div className={styles.partialText}>Hearing: {sttPartial}</div>
-      )}
       {sttStatus === 'error' && (
         <div className={styles.sttError}>Mic error — click mic to retry</div>
       )}
