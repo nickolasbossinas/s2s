@@ -1,0 +1,25 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #0f172a;
+  color: #f3f4f6;
+}
+
+.header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #1e293b;
+  text-align: center;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.main {
+  flex: 1;
+  overflow: hidden;
+}
