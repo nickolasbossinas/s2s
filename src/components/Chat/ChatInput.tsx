@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, type FormEvent } from 'react';
-import type { SttStatus, SttLoadProgress } from '../../types/stt';
+import type { SttStatus } from '../../types/stt';
 import MicButton from './MicButton';
 import styles from './Chat.module.css';
 
@@ -10,7 +10,6 @@ interface ChatInputProps {
   onSttTextConsumed: () => void;
   sttPartial: string;
   sttStatus: SttStatus;
-  sttLoadProgress: SttLoadProgress | null;
   onMicToggle: () => void;
 }
 

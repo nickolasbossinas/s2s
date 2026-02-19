@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { SherpaEngine } from '../services/sherpa-engine';
-import type { SttStatus, SttLoadProgress } from '../types/stt';
+import type { SttStatus } from '../types/stt';
 
 /** Downsample a Float32Array from inputRate to outputRate via simple averaging. */
 function downsample(buffer: Float32Array, inputRate: number, outputRate: number): Float32Array {
@@ -38,7 +38,6 @@ export interface UseSpeechToTextReturn {
   status: SttStatus;
   partialText: string;
   finalText: string;
-  loadProgress: SttLoadProgress | null;
   error: string | null;
   toggleRecording: () => Promise<void>;
   clearText: () => void;
@@ -48,7 +47,6 @@ export function useSpeechToText(): UseSpeechToTextReturn {
   const [status, setStatus] = useState<SttStatus>('idle');
   const [partialText, setPartialText] = useState('');
   const [finalText, setFinalText] = useState('');
-  const [loadProgress, setLoadProgress] = useState<SttLoadProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const engineRef = useRef<SherpaEngine | null>(null);
@@ -60,7 +58,7 @@ export function useSpeechToText(): UseSpeechToTextReturn {
   const bufferLenRef = useRef(0);
   const finalsRef = useRef<string[]>([]);
 
-  // Accumulate PCM samples and feed to engine in batches
+  // Send accumulated PCM samples to the worker
   const processBatch = useCallback(() => {
     const engine = engineRef.current;
     if (!engine) return;
@@ -78,24 +76,43 @@ export function useSpeechToText(): UseSpeechToTextReturn {
     bufferRef.current = [];
     bufferLenRef.current = 0;
 
-    // Downsample to 16 kHz and feed
+    // Downsample to 16 kHz and send to worker
     const samples16k = downsample(merged, nativeRate, 16000);
     engine.feedAudio(samples16k);
+  }, []);
 
-    // Update partial text
-    const raw = engine.getPartialText();
-    setPartialText(normalizeText(raw));
-
-    // Check endpoint
-    if (engine.checkEndpoint()) {
-      const finalized = normalizeText(raw);
-      if (finalized) {
-        finalsRef.current.push(finalized);
-        setFinalText(finalsRef.current.join(' '));
-      }
-      engine.resetStream();
-      setPartialText('');
+  // Load WASM engine in Web Worker on mount (background)
+  useEffect(() => {
+    const supportError = checkBrowserSupport();
+    if (supportError) {
+      setError(supportError);
+      setStatus('error');
+      return;
     }
+
+    setStatus('loading');
+
+    // Results come back asynchronously from the worker
+    const engine = new SherpaEngine((result) => {
+      const normalized = normalizeText(result.text);
+      setPartialText(normalized);
+
+      if (result.isEndpoint) {
+        if (normalized) {
+          finalsRef.current.push(normalized);
+          setFinalText(finalsRef.current.join(' '));
+        }
+        setPartialText('');
+      }
+    });
+    engineRef.current = engine;
+
+    engine.init().then(() => {
+      setStatus('ready');
+    }).catch((err) => {
+      setError(err instanceof Error ? err.message : 'Failed to load speech recognition engine');
+      setStatus('error');
+    });
   }, []);
 
   const toggleRecording = useCallback(async () => {
@@ -106,30 +123,17 @@ export function useSpeechToText(): UseSpeechToTextReturn {
       return;
     }
 
-    // If already ready (engine loaded), just reconnect
+    // If already set up (mic connected before), just reconnect
     if (status === 'ready' && workletRef.current && sourceRef.current) {
       sourceRef.current.connect(workletRef.current);
       setStatus('recording');
       return;
     }
 
-    // First time: load engine + setup mic
-    const supportError = checkBrowserSupport();
-    if (supportError) {
-      setError(supportError);
-      setStatus('error');
-      return;
-    }
-
-    setStatus('loading');
-    setError(null);
+    // First mic click: set up audio pipeline (engine already loaded in worker)
+    if (status !== 'ready') return;
 
     try {
-      // Initialize sherpa engine
-      const engine = new SherpaEngine(setLoadProgress);
-      engineRef.current = engine;
-      await engine.init();
-
       // Request mic with echo cancellation
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
@@ -162,7 +166,6 @@ export function useSpeechToText(): UseSpeechToTextReturn {
       sourceRef.current = source;
       source.connect(workletNode);
 
-      setLoadProgress(null);
       setStatus('recording');
     } catch (err) {
       const msg = err instanceof DOMException
@@ -196,5 +199,5 @@ export function useSpeechToText(): UseSpeechToTextReturn {
     };
   }, []);
 
-  return { status, partialText, finalText, loadProgress, error, toggleRecording, clearText };
+  return { status, partialText, finalText, error, toggleRecording, clearText };
 }

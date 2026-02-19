@@ -4,7 +4,6 @@ import { sendMessage } from '../../services/llm';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
-import LoadingOverlay from './LoadingOverlay';
 import styles from './Chat.module.css';
 
 let nextId = 0;
@@ -20,7 +19,6 @@ export default function ChatWindow() {
     status: sttStatus,
     partialText,
     finalText,
-    loadProgress,
     toggleRecording,
     clearText,
   } = useSpeechToText();
@@ -46,9 +44,6 @@ export default function ChatWindow() {
 
   return (
     <div className={styles.chatWindow}>
-      {sttStatus === 'loading' && loadProgress && (
-        <LoadingOverlay progress={loadProgress} />
-      )}
       <MessageList messages={messages} />
       <ChatInput
         onSend={handleSend}
@@ -57,7 +52,6 @@ export default function ChatWindow() {
         onSttTextConsumed={handleSttTextConsumed}
         sttPartial={partialText}
         sttStatus={sttStatus}
-        sttLoadProgress={loadProgress}
         onMicToggle={toggleRecording}
       />
     </div>

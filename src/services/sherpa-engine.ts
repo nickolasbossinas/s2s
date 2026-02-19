@@ -1,27 +1,23 @@
-import type { SherpaRecognizer, SherpaStream, SttLoadProgress } from '../types/stt';
-
-declare global {
-  interface Window {
-    Module: Record<string, unknown>;
-    createOnlineRecognizer: (module: Record<string, unknown>) => SherpaRecognizer;
-  }
-}
-
 /**
- * Wraps the sherpa-onnx Emscripten WASM module behind a clean TypeScript API.
- * The WASM files must be present in /sherpa-onnx-asr/ (served from public/).
+ * Thin proxy to the sherpa-onnx Web Worker.
+ * All WASM compilation, model loading, and recognition run off the main thread.
  */
-export class SherpaEngine {
-  private recognizer: SherpaRecognizer | null = null;
-  private stream: SherpaStream | null = null;
-  private onProgress: (progress: SttLoadProgress) => void;
-  private initPromise: Promise<void> | null = null;
 
-  constructor(onProgress: (progress: SttLoadProgress) => void) {
-    this.onProgress = onProgress;
+export type SherpaResult = {
+  text: string;
+  isEndpoint: boolean;
+};
+
+export class SherpaEngine {
+  private worker: Worker | null = null;
+  private initPromise: Promise<void> | null = null;
+  private onResult: (result: SherpaResult) => void;
+
+  constructor(onResult: (result: SherpaResult) => void) {
+    this.onResult = onResult;
   }
 
-  /** Load WASM + model. Idempotent — second call returns the same promise. */
+  /** Load WASM + model in a Web Worker. Idempotent. */
   async init(): Promise<void> {
     if (this.initPromise) return this.initPromise;
     this.initPromise = this.doInit();
@@ -30,87 +26,48 @@ export class SherpaEngine {
 
   private doInit(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const module: Record<string, unknown> = {};
+      const worker = new Worker('/sherpa-worker.js');
+      this.worker = worker;
 
-      module.locateFile = (path: string) => `/sherpa-onnx-asr/${path}`;
-
-      module.setStatus = (status: string) => {
-        const match = status.match(/Downloading data\.\.\. \((\d+)\/(\d+)\)/);
-        if (match) {
-          const downloaded = Number(match[1]);
-          const total = Number(match[2]);
-          const percent = total === 0 ? 0 : (downloaded / total) * 100;
-          this.onProgress({ phase: 'downloading', percent, detail: `Downloading model: ${percent.toFixed(0)}%` });
-        } else if (status === 'Running...') {
-          this.onProgress({ phase: 'initializing', percent: 100, detail: 'Initializing recognizer...' });
-        }
-      };
-
-      module.onRuntimeInitialized = () => {
-        try {
-          if (!window.createOnlineRecognizer) {
-            throw new Error('createOnlineRecognizer not found — sherpa-onnx-asr.js may not have loaded');
-          }
-          this.recognizer = window.createOnlineRecognizer(module);
-          this.stream = this.recognizer.createStream();
+      worker.onmessage = (e: MessageEvent) => {
+        const msg = e.data;
+        if (msg.type === 'ready') {
+          // Switch to runtime message handler
+          worker.onmessage = this.handleRuntimeMessage.bind(this);
           resolve();
-        } catch (err) {
-          reject(err);
+        } else if (msg.type === 'error') {
+          reject(new Error(msg.message));
         }
       };
 
-      window.Module = module;
+      worker.onerror = (err) => {
+        reject(new Error(`Worker error: ${err.message}`));
+      };
 
-      // Load API script (defines createOnlineRecognizer global)
-      const apiScript = document.createElement('script');
-      apiScript.src = '/sherpa-onnx-asr/sherpa-onnx-asr.js';
-      apiScript.onerror = () => reject(new Error('Failed to load sherpa-onnx API script'));
-      document.head.appendChild(apiScript);
-
-      // Load Emscripten glue script (reads window.Module, fetches .wasm + .data)
-      const glueScript = document.createElement('script');
-      glueScript.src = '/sherpa-onnx-asr/sherpa-onnx-wasm-main-asr.js';
-      glueScript.onerror = () => reject(new Error('Failed to load WASM glue script'));
-      document.head.appendChild(glueScript);
+      worker.postMessage({ type: 'init' });
     });
   }
 
-  /** Feed a chunk of 16 kHz mono PCM audio. */
+  private handleRuntimeMessage(e: MessageEvent): void {
+    const msg = e.data;
+    if (msg.type === 'result') {
+      this.onResult({ text: msg.text, isEndpoint: msg.isEndpoint });
+    } else if (msg.type === 'error') {
+      console.error('[SherpaEngine] Worker error:', msg.message);
+    }
+  }
+
+  /** Send 16 kHz mono PCM audio to the worker for recognition. */
   feedAudio(samples16k: Float32Array): void {
-    if (!this.recognizer || !this.stream) return;
-    this.stream.acceptWaveform(16000, samples16k);
-    while (this.recognizer.isReady(this.stream)) {
-      this.recognizer.decode(this.stream);
-    }
+    if (!this.worker) return;
+    this.worker.postMessage({ type: 'feed', samples: samples16k }, [samples16k.buffer]);
   }
 
-  /** Get current partial text. */
-  getPartialText(): string {
-    if (!this.recognizer || !this.stream) return '';
-    return this.recognizer.getResult(this.stream).text;
-  }
-
-  /** Check if the recognizer detected an endpoint (speaker stopped). */
-  checkEndpoint(): boolean {
-    if (!this.recognizer || !this.stream) return false;
-    return this.recognizer.isEndpoint(this.stream);
-  }
-
-  /** Reset stream for next utterance (call after endpoint detected). */
-  resetStream(): void {
-    if (!this.recognizer || !this.stream) return;
-    this.recognizer.reset(this.stream);
-  }
-
-  /** Clean up all resources. */
+  /** Clean up worker and resources. */
   destroy(): void {
-    if (this.stream) {
-      this.stream.free();
-      this.stream = null;
-    }
-    if (this.recognizer) {
-      this.recognizer.free();
-      this.recognizer = null;
+    if (this.worker) {
+      this.worker.postMessage({ type: 'destroy' });
+      this.worker = null;
     }
     this.initPromise = null;
   }

@@ -8,18 +8,18 @@ interface MicButtonProps {
 
 export default function MicButton({ status, onClick }: MicButtonProps) {
   const isRecording = status === 'recording';
-  const isLoading = status === 'loading';
+  const isNotReady = status === 'idle' || status === 'loading';
 
   return (
     <button
       className={`${styles.micButton} ${isRecording ? styles.micButtonRecording : ''}`}
       onClick={onClick}
-      disabled={isLoading}
+      disabled={isNotReady}
       type="button"
       aria-label={isRecording ? 'Stop recording' : 'Start recording'}
       title={isRecording ? 'Stop recording' : 'Start recording'}
     >
-      {isLoading ? (
+      {isNotReady ? (
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
           <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" strokeDasharray="40" strokeDashoffset="10">
             <animateTransform attributeName="transform" type="rotate" from="0 10 10" to="360 10 10" dur="1s" repeatCount="indefinite" />
