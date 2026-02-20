@@ -1,5 +1,10 @@
 # S2S Core
 
+[![npm version](https://img.shields.io/npm/v/s2s-core)](https://www.npmjs.com/package/s2s-core)
+[![npm bundle size](https://img.shields.io/bundlephobia/minzip/s2s-core)](https://bundlephobia.com/package/s2s-core)
+[![license](https://img.shields.io/github/license/nickolasbossinas/s2s)](https://github.com/nickolasbossinas/s2s/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/nickolasbossinas/s2s)](https://github.com/nickolasbossinas/s2s)
+
 Full-duplex speech-to-speech in the browser. Zero dependencies. Runs STT (speech-to-text) and TTS (text-to-speech) locally via WebAssembly using [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx).
 
 The library is **chatbot-agnostic** — it handles the voice pipeline (mic input, speech recognition, text-to-speech playback) and emits events. You wire up any AI/chatbot in between.
